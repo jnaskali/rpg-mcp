@@ -62,31 +62,45 @@ def list_tools() -> str:
         return json.dumps({"error": f"Failed to list tools: {str(e)}"})
 
 @mcp.tool()
-def check_success(probability: int = 80, critical_rate: int = 5) -> str:
+def check_success(probability: int = 80, critical_success: int = 5, critical_failure: int = None) -> str:
     """
-    Check for success based on a given probability and critical rate.
+    Check for success based on a given probability and optional critical success/failure rates.
     Returns 'critical success', 'success', 'failure', or 'critical failure'.
     Args:
-        probability: The chance of success (1-100), defaults to 80.
-        critical_rate: The bottom/top percentage for critical success/failure (0-50), defaults to 5.
+        probability: The chance of success in percentage (1-100), defaults to 80.
+        critical_success: The top percentage for critical success (0-50), defaults to 5.
+        critical_failure: The bottom percentage for critical failure (0-50), defaults to critical_success.
     """
     try:
         if not isinstance(probability, int) or not (0 <= probability <= 100):
             logger.warning("Invalid probability: %s", probability)
             return "Error: Probability must be an integer between 0 and 100."
-        if not isinstance(critical_rate, int) or not (0 <= critical_rate <= 50):
-            logger.warning("Invalid critical_rate: %s", critical_rate)
-            return "Error: Critical rate must be an integer between 0 and 50."
+
+        # default failure rate to success rate if not provided
+        if critical_failure is None:
+            critical_failure = critical_success
+            
+        if not isinstance(critical_success, int) or not (0 <= critical_success <= 50):
+            logger.warning("Invalid critical_success: %s", critical_success)
+            return "Error: Critical success must be an integer between 0 and 50."
+        if not isinstance(critical_failure, int) or not (0 <= critical_failure <= 50):
+            logger.warning("Invalid critical_failure: %s", critical_failure)
+            return "Error: Critical failure must be an integer between 0 and 50."
 
         roll = random.randint(1, 100)
-        logger.debug("Roll: %d, Probability: %d, Critical Rate: %d", roll, probability, critical_rate)
+        logger.debug(
+            "Roll: %d, Probability: %d, CritSuccess: %d, CritFailure: %d",
+            roll, probability, critical_success, critical_failure
+        )
 
-        if critical_rate > 0:
-            if roll <= critical_rate:
-                return f"Rolled {roll}: Critical Failure!"
-            if roll >= (101 - critical_rate):
-                return f"Rolled {roll}: Critical Success!"
+        # check critical failure first
+        if critical_failure > 0 and roll <= critical_failure:
+            return f"Rolled {roll}: Critical Failure!"
+        # then critical success
+        if critical_success > 0 and roll >= (101 - critical_success):
+            return f"Rolled {roll}: Critical Success!"
 
+        # normal success/failure
         if roll <= probability:
             return f"Rolled {roll}: Success!"
         return f"Rolled {roll}: Failure!"
