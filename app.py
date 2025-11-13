@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import sys
+from faker import Faker
 from typing import Dict, Any
 from mcp.server.fastmcp import FastMCP
 
@@ -40,26 +41,6 @@ def parse_args() -> argparse.Namespace:
 # Initialize MCP server
 mcp = FastMCP("STDIO RPG Assistant")
 logger.info("Initialized MCP server: STDIO RPG Assistant")
-
-@mcp.tool()
-def list_tools() -> str:
-    """
-    List all available tools in the MCP server.
-    Returns a JSON string containing tool names and their descriptions.
-    """
-    try:
-        tools = [
-            {
-                "name": name,
-                "description": tool.__doc__.strip() if tool.__doc__ else "No description available"
-            }
-            for name, tool in mcp.tools.items()
-        ]
-        logger.info("Listing available tools: %s", [tool["name"] for tool in tools])
-        return json.dumps({"tools": tools}, indent=2)
-    except Exception as e:
-        logger.error("Error listing tools: %s", e)
-        return json.dumps({"error": f"Failed to list tools: {str(e)}"})
 
 @mcp.tool()
 def check_success(probability: int = 80, critical_success: int = 5, critical_failure: int = None) -> str:
@@ -179,6 +160,101 @@ def generate_event() -> str:
         return event
     except Exception as e:
         logger.error("Error in generate_event: %s", e)
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def generate_name(count: int = 1, gender: str = "random", locale: str = "en_US") -> str:
+    """
+    Generate random modern names.
+    Args:
+        count: Number of names to generate (default: 1).
+        gender: Gender for names - 'male', 'female', or 'random' (default: 'random').
+        locale: Locale code for nationality of names - 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'ja_JP',
+                'zh_CN', 'ar_SA', 'ru_RU', etc. (default: 'en_US').
+    """
+    try:
+        # Validate inputs
+        if not isinstance(count, int) or count < 1:
+            logger.warning("Invalid count: %s", count)
+            return "Error: Count must be a positive integer."
+
+        gender = gender.lower()
+        if gender not in ["male", "female", "random"]:
+            logger.warning("Invalid gender: %s", gender)
+            return "Error: Gender must be 'male', 'female', or 'random'."
+
+        try:
+            fake = Faker(locale)
+        except AttributeError:
+            logger.warning("Invalid locale: %s", locale)
+            return f"Error: Invalid locale '{locale}'. Using default 'en_US'."
+
+        # Generate names
+        results = []
+        for _ in range(count):
+            # Determine gender for this name
+            current_gender = gender if gender != "random" else random.choice(["male", "female"])
+
+            # Generate name based on gender
+            if current_gender == "male":
+                full_name = fake.name_male()
+            else:
+                full_name = fake.name_female()
+
+            results.append(full_name)
+
+        # Format output
+        if count == 1:
+            output = results[0]
+        else:
+            output = "\n".join(f"{i+1}. {name}" for i, name in enumerate(results))
+
+        logger.debug("Generated %d name(s) - Gender: %s, Locale: %s", count, gender, locale)
+        return output
+
+    except Exception as e:
+        logger.error("Error in generate_name: %s", e)
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def generate_address(count: int = 1, locale: str = "en_US") -> str:
+    """
+    Generate random addresses.
+    Args:
+        count: Number of addresses to generate (default: 1).
+        locale: Locale code for addresses - 'en_US', 'es_ES', 'fr_FR', 'de_DE', 'ja_JP',
+                'zh_CN', 'ar_SA', 'ru_RU', etc. (default: 'en_US').
+    """
+    try:
+        # Validate inputs
+        if not isinstance(count, int) or count < 1:
+            logger.warning("Invalid count: %s", count)
+            return "Error: Count must be a positive integer."
+
+        # Initialize Faker with specified locale
+        try:
+            fake = Faker(locale)
+        except AttributeError:
+            logger.warning("Invalid locale: %s", locale)
+            return f"Error: Invalid locale '{locale}'. Using default 'en_US'."
+
+        # Generate addresses
+        results = []
+        for _ in range(count):
+            address = fake.address()
+            results.append(address)
+
+        # Format output
+        if count == 1:
+            output = results[0]
+        else:
+            output = "\n\n".join(f"{i+1}. {addr}" for i, addr in enumerate(results))
+
+        logger.debug("Generated %d address(es) - Locale: %s", count, locale)
+        return output
+
+    except Exception as e:
+        logger.error("Error in generate_address: %s", e)
         return f"Error: {str(e)}"
 
 def main():

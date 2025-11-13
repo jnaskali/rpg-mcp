@@ -1,0 +1,10 @@
+[project]
+name = "rpg-mcp"
+version = "0.1.0"
+description = "MCP Server for RPG functions - random success checks, dice rolls, events, names and addresses."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "mcp-server>=0.1.4",
+    "faker>=38.0.0",
+]
