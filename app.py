@@ -6,7 +6,7 @@ import re
 import sys
 from faker import Faker
 from typing import Dict, Any
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 # Configure logging
 logging.basicConfig(
@@ -39,8 +39,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 # Initialize MCP server
-mcp = FastMCP("STDIO RPG Assistant")
-logger.info("Initialized MCP server: STDIO RPG Assistant")
+mcp = FastMCP("RPG Assistant")
+logger.info("Initialized MCP server: RPG Assistant")
 
 @mcp.tool()
 def check_success(probability: int = 80, critical_success: int = 5, critical_failure: int = None) -> str:
@@ -266,7 +266,7 @@ def main():
             mcp.run()
         else:
             logger.info("Starting MCP server with HTTP transport on %s:%d", args.host, args.port)
-            mcp.run_http(args.host, args.port)
+            mcp.run(transport="http", host=args.host, port=args.port)
     except KeyboardInterrupt:
         logger.info("Shutting down MCP server")
     except Exception as e:
